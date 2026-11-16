@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spellcheck & Grammar Test Playground</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --tag-bg: #eff6ff;
+      --tag-text: #1e40af;
+      --radius: 10px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f172a;
+        --surface: #1e293b;
+        --border: #334155;
+        --text: #f8fafc;
+        --muted: #94a3b8;
+        --accent: #3b82f6;
+        --accent-hover: #60a5fa;
+        --tag-bg: #1e3a8a;
+        --tag-text: #bfdbfe;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 16px;
+      background: var(--surface);
+      padding: 20px 24px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 600;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 4px;
+    }
+
+    .env-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      background: var(--surface);
+      padding: 16px 20px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+
+    .env-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .env-label {
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .env-value {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-weight: 600;
+      word-break: break-all;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      background: var(--surface);
+      padding: 14px 20px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.875rem;
+    }
+
+    select, button, input[type="text"] {
+      font: inherit;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.875rem;
+    }
+
+    button {
+      cursor: pointer;
+      background: var(--surface);
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    button.primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .badge {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.75rem;
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    textarea, .editable {
+      width: 100%;
+      min-height: 130px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+    }
+
+    textarea:focus, .editable:focus, input[type="text"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+
+    .single-line {
+      width: 100%;
+      padding: 10px 12px;
+    }
+
+    .hint {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .event-log {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.8rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      max-height: 140px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Spellcheck & Grammar Test Playground</h1>
+        <p class="subtitle">Test spelling, grammar underline, context menu suggestions, and text replacement in WebView2 / Browser</p>
+      </div>
+      <div class="presets">
+        <button type="button" class="primary" onclick="resetSamples()">Reset All Samples</button>
+        <button type="button" onclick="focusAllAndTrigger()">Focus Walk (Trigger Check)</button>
+      </div>
+    </header>
+
+    <section class="env-bar" aria-label="Locale Environment">
+      <div class="env-item">
+        <span class="env-label">navigator.language</span>
+        <span class="env-value" id="env-nav-lang">-</span>
+      </div>
+      <div class="env-item">
+        <span class="env-label">navigator.languages</span>
+        <span class="env-value" id="env-nav-langs">-</span>
+      </div>
+      <div class="env-item">
+        <span class="env-label">Intl Default Locale</span>
+        <span class="env-value" id="env-intl-locale">-</span>
+      </div>
+      <div class="env-item">
+        <span class="env-label">document.documentElement.lang</span>
+        <span class="env-value" id="env-doc-lang">-</span>
+      </div>
+    </section>
+
+    <section class="toolbar">
+      <div class="control-group">
+        <label for="doc-lang-select">Document <code>lang</code>:</label>
+        <select id="doc-lang-select" onchange="updateDocLang(this.value)">
+          <option value="en">en</option>
+          <option value="en-US">en-US</option>
+          <option value="en-GB">en-GB</option>
+          <option value="fr-FR">fr-FR</option>
+          <option value="de-DE">de-DE</option>
+          <option value="es-ES">es-ES</option>
+          <option value="zh-CN">zh-CN</option>
+          <option value="">(empty)</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label for="spellcheck-select">Global <code>spellcheck</code>:</label>
+        <select id="spellcheck-select" onchange="updateGlobalSpellcheck(this.value)">
+          <option value="true" selected>true</option>
+          <option value="false">false</option>
+        </select>
+      </div>
+    </section>
+
+    <main class="grid">
+      <!-- Strategy A/B/C Comparison Card (>20 French Typos) -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-header">
+          <span class="card-title">A / B / C 方案同包对比区（25+ 法语错词：测 UI 卡顿 &amp; 第 21+ 词截断）</span>
+          <button type="button" class="primary" onclick="triggerPaste25Typos()">一键模拟粘贴 25+ 法语错词</button>
+        </div>
+        <textarea id="sample-compare" spellcheck="true" style="min-height: 110px;"></textarea>
+        <p class="hint">
+          点右上按钮后观察：① <b>baseline</b>：首词 <code>exmple</code> 给英文 <code>example</code>，末尾词 <code>methode</code> 无建议；
+          ② <b>ui20</b>：点下瞬间 UI 线程顿 ~110ms，首词 <code>exmple</code> 正常给 <code>exemple</code>，但<b>末尾第 21+ 个错词 <code>francais</code> / <code>methode</code> 退回给英文 <code>Francis</code> 或无建议</b>；
+          ③ <b>bg3（当前修复）</b>：0ms 卡顿，首词与末尾 <code>francais</code> / <code>methode</code> 右键均返回法语 <code>exemple</code> / <code>français</code> / <code>méthode</code>。
+        </p>
+      </div>
+
+      <!-- English Grammar & Spelling (Textarea) -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">English (Grammar & Spelling)</span>
+          <span class="badge">&lt;textarea lang="en-US"&gt;</span>
+        </div>
+        <textarea id="sample-en" lang="en-US" spellcheck="true"></textarea>
+        <p class="hint">Contains subject-verb disagreement ("They is", "she dont"), wrong homophones ("Their goes"), and typos ("teh", "recieve").</p>
+      </div>
+
+      <!-- Rich Text ContentEditable -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Rich Text Editable</span>
+          <span class="badge">contenteditable="true" lang="en-US"</span>
+        </div>
+        <div id="sample-rich" class="editable" contenteditable="true" lang="en-US" spellcheck="true"></div>
+        <p class="hint">Right-click underlined words or pause after typing a space/period to inspect grammar and spellcheck behavior.</p>
+      </div>
+
+      <!-- French -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">French (Français)</span>
+          <span class="badge">&lt;textarea lang="fr-FR"&gt;</span>
+        </div>
+        <textarea id="sample-fr" lang="fr-FR" spellcheck="true"></textarea>
+        <p class="hint">Tests French agreement & spelling ("Les enfant sont", "je suis alle", "bonjor").</p>
+      </div>
+
+      <!-- German -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">German (Deutsch)</span>
+          <span class="badge">&lt;textarea lang="de-DE"&gt;</span>
+        </div>
+        <textarea id="sample-de" lang="de-DE" spellcheck="true"></textarea>
+        <p class="hint">Tests German capitalization, spelling, and grammar ("Ich habe ein buch", "das ist sehhr gut").</p>
+      </div>
+
+      <!-- Spanish -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Spanish (Español)</span>
+          <span class="badge">&lt;textarea lang="es-ES"&gt;</span>
+        </div>
+        <textarea id="sample-es" lang="es-ES" spellcheck="true"></textarea>
+        <p class="hint">Tests Spanish agreement & accents ("Los perro corre", "esta muy vien").</p>
+      </div>
+
+      <!-- Single-line & Input Event Inspector -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Single-line Input & Replacement Log</span>
+          <span class="badge">&lt;input type="text"&gt;</span>
+        </div>
+        <input id="sample-input" class="single-line" type="text" lang="en-US" spellcheck="true" />
+        <div class="event-log" id="event-log">Waiting for input / spellcheck replacement events...</div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const SAMPLES = {
+      en: "She dont know what their doing today. They is going to teh store to recieve a pakage. Me and him was very happy yesterday.",
+      rich: "He go to work evry morning at 8am. This are a example of grammar and speling mistakes in a editable div.",
+      fr: "Bonjor, les enfant sont tres content aujourd'hui. Je suis alle au marche pour achete des pomme.",
+      de: "Ich habe gestern ein interessantes buch gelesen. Er gehen jeden Tag in der Schule und das ist sehhr gut.",
+      es: "Hola, los perro corre rapido en el parque. Ayer yo fue a la tienda y todo esta muy vien.",
+      input: "I has two cats and teh dog."
+    };
+
+    function refreshEnvBar() {
+      document.getElementById("env-nav-lang").textContent = navigator.language || "(empty)";
+      document.getElementById("env-nav-langs").textContent = (navigator.languages || []).join(", ") || "(empty)";
+      document.getElementById("env-intl-locale").textContent = Intl.DateTimeFormat().resolvedOptions().locale;
+      document.getElementById("env-doc-lang").textContent = document.documentElement.lang || "(empty)";
+    }
+
+    const COMPARE_25_FR =
+      "[#1] Bonjour tout le monde, voici un exmple de texte avec beaucoup de fautes: " +
+      "nous allons developper un produts, verifier la qualite du systme, corriger chaque problme, " +
+      "preparer la reunon, envoyer une reponce, organiser le travil, tester la foncton, " +
+      "valider le resulta, partager le docment, reviser le chapite, finir rapidment, " +
+      "trouver une soluton, ouvrir la fentre, fermer la portte, lire le messge, " +
+      "ecrire un artcle, choisir la couler, garder le secrt, montrer le chemn, " +
+      "et enfin a la fin tester [#24+] francais et methode aujourd'hui. ";
+
+    function triggerPaste25Typos() {
+      const el = document.getElementById("sample-compare");
+      el.value = "";
+      el.focus();
+      document.execCommand("insertText", false, COMPARE_25_FR);
+      logEvent("Inserted 25+ French typos via insertText into comparison box.");
+    }
+
+    function resetSamples() {
+      document.getElementById("sample-compare").value = COMPARE_25_FR;
+      document.getElementById("sample-en").value = SAMPLES.en;
+      document.getElementById("sample-rich").textContent = SAMPLES.rich;
+      document.getElementById("sample-fr").value = SAMPLES.fr;
+      document.getElementById("sample-de").value = SAMPLES.de;
+      document.getElementById("sample-es").value = SAMPLES.es;
+      document.getElementById("sample-input").value = SAMPLES.input;
+      logEvent("Reset all sample fields.");
+    }
+
+    function updateDocLang(lang) {
+      document.documentElement.lang = lang;
+      refreshEnvBar();
+      logEvent(`Set document.documentElement.lang = "${lang}"`);
+    }
+
+    function updateGlobalSpellcheck(val) {
+      const enabled = val === "true";
+      document.querySelectorAll("textarea, .editable, input[type='text']").forEach(el => {
+        el.spellcheck = enabled;
+      });
+      logEvent(`Set spellcheck = ${enabled} on all fields.`);
+    }
+
+    function focusAllAndTrigger() {
+      const fields = document.querySelectorAll("textarea, .editable, input[type='text']");
+      let i = 0;
+      function step() {
+        if (i >= fields.length) return;
+        const el = fields[i++];
+        el.focus();
+        if (el.tagName === "TEXTAREA" || el.tagName === "INPUT") {
+          const text = el.value.trimEnd() + " ";
+          el.select();
+          document.execCommand("insertText", false, text);
+        } else {
+          const text = el.textContent.trimEnd() + " ";
+          const sel = window.getSelection();
+          sel.selectAllChildren(el);
+          document.execCommand("insertText", false, text);
+        }
+        setTimeout(step, 180);
+      }
+      step();
+      logEvent("Triggered simulated typing (insertText) across all fields.");
+    }
+
+    function logEvent(msg) {
+      const log = document.getElementById("event-log");
+      const time = new Date().toLocaleTimeString();
+      log.textContent = `[${time}] ${msg}\n` + log.textContent;
+    }
+
+    document.addEventListener("beforeinput", (e) => {
+      if (e.inputType === "insertReplacementText" || e.inputType === "insertText") {
+        logEvent(`beforeinput: type=${e.inputType}, data=${JSON.stringify(e.data)}`);
+      }
+    });
+
+    resetSamples();
+    refreshEnvBar();
+  </script>
+</body>
+</html>
