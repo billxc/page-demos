@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>macOS Drag State Wedge Repro — Window A (Victim)</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --surface: #ffffff;
+      --surface-subtle: #f1f3f6;
+      --border: #dfe3ea;
+      --text: #18202c;
+      --muted: #5b6678;
+      --accent: #0f62fe;
+      --accent-hover: #0043ce;
+      --warn: #b45309;
+      --warn-bg: #fffbeb;
+      --warn-border: #fde68a;
+      --ok: #1b7f4b;
+      --ok-bg: #ebfbee;
+      --ok-border: #b2f2bb;
+      --danger: #c92a2a;
+      --danger-bg: #fff5f5;
+      --danger-border: #ffc9c9;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f131a;
+        --surface: #171c26;
+        --surface-subtle: #1f2633;
+        --border: #2c3547;
+        --text: #e8edf5;
+        --muted: #9aa6ba;
+        --accent: #5c9aff;
+        --accent-hover: #7bb0ff;
+        --warn: #fbbf24;
+        --warn-bg: #2b2312;
+        --warn-border: #664d14;
+        --ok: #69db7c;
+        --ok-bg: #15291e;
+        --ok-border: #265238;
+        --danger: #ff8787;
+        --danger-bg: #2b181b;
+        --danger-border: #5c282e;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      padding: 28px 18px 56px;
+    }
+
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    h1 {
+      font-size: 22px;
+      margin: 0 0 8px;
+    }
+
+    p.lead {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+    }
+
+    .card h2 {
+      font-size: 15px;
+      margin: 0 0 10px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    button.primary {
+      appearance: none;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      font-size: 14px;
+      padding: 9px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button.primary:hover { background: var(--accent-hover); }
+
+    select {
+      font-size: 13px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface-subtle);
+      color: var(--text);
+    }
+
+    iframe#delayedFrame {
+      width: 100%;
+      height: 92px;
+      border: none;
+      display: block;
+    }
+
+    .timer-bar-wrap {
+      margin-top: 12px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--surface-subtle);
+      overflow: hidden;
+    }
+
+    .timer-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 60ms linear;
+    }
+
+    .status {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      background: var(--surface-subtle);
+    }
+
+    .status.armed {
+      background: var(--warn-bg);
+      border-color: var(--warn-border);
+      color: var(--warn);
+      font-weight: 600;
+    }
+
+    .status.wedged {
+      background: var(--danger-bg);
+      border-color: var(--danger-border);
+      color: var(--danger);
+      font-weight: 600;
+    }
+
+    .status.ok {
+      background: var(--ok-bg);
+      border-color: var(--ok-border);
+      color: var(--ok);
+    }
+
+    .normal-probe {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+    }
+
+    .normal-link {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    ol.steps {
+      margin: 0;
+      padding-left: 20px;
+      font-size: 14px;
+    }
+
+    ol.steps li { margin-bottom: 6px; }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: var(--surface-subtle);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <span class="tag">macOS Chromium / WebView2Mac Repro</span>
+      <span class="tag">Window A · Victim WebContents</span>
+    </div>
+
+    <h1>macOS Rejected Drag Initiation — Permanent Drag State Wedge</h1>
+    <p class="lead">
+      Reproduces the state-wedging bug introduced in <code>crrev.com/c/8452662</code> where
+      <code>-[WebContentsViewCocoa startDragWithDropData:...]</code> bails out on
+      <code>!ui::IsDragSessionInitiationAllowed()</code> (or a <code>nil</code> <code>NSDraggingSession*</code>)
+      without calling <code>_host-&gt;EndDrag(...)</code>, leaving <code>[drag_dest_ didInitiateDrag]</code>
+      stuck <code>true</code> for the lifetime of this tab.
+    </p>
+
+    <div class="card">
+      <h2>Step 1 — Open Window B Side-by-Side</h2>
+      <div class="row">
+        <button class="primary" id="openPeerBtn" type="button">Open Window B (Blocker Page)</button>
+        <a href="../macos-drag-wedge-peer/" target="_blank" rel="noopener" style="font-size:13px;color:var(--accent);">
+          ../macos-drag-wedge-peer/ ↗
+        </a>
+        <label style="margin-left:auto;font-size:13px;color:var(--muted);">
+          Delay:
+          <select id="delaySelect">
+            <option value="3000" selected>3.0 seconds</option>
+            <option value="4500">4.5 seconds</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Step 2 — Verify Baseline &amp; Post-Repro Drag State (Normal Zero-Delay Link)</h2>
+      <div class="normal-probe">
+        <a class="normal-link" id="probeLink" href="https://example.com">
+          [Normal Test Link] Drag me before &amp; after repro to check if drag-out works
+        </a>
+        <span style="font-size:12px;color:var(--muted);" id="probeStats">
+          DOM dragstart: 0 · dragend: 0
+        </span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Step 3 — Trigger Delayed Drag in Isolated Subframe</h2>
+      <iframe id="delayedFrame" sandbox="allow-scripts" src="./delayed-box.html?delay=3000" title="Delayed drag source"></iframe>
+      <div class="timer-bar-wrap">
+        <div class="timer-bar" id="timerBar"></div>
+      </div>
+      <div class="status" id="statusBox">
+        Idle. Pull the dashed box slightly and release the mouse immediately to start the countdown.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Reproduction Steps (macOS)</h2>
+      <ol class="steps">
+        <li>Click <strong>Open Window B (Blocker Page)</strong> and place Window A and Window B side-by-side.</li>
+        <li>Drag <strong>[Normal Test Link]</strong> above once to confirm macOS lifts a link drag preview normally.</li>
+        <li>Pull <strong>[3.0s Delayed Drag Box]</strong> slightly and <strong>immediately release the mouse button</strong> (no preview appears yet while the sandboxed subframe blocks in <code>dragstart</code>).</li>
+        <li><strong>Before the countdown hits 0.0s</strong>, move to <strong>Window B</strong>, drag its target card into mid-air, and <strong>keep holding the mouse button</strong> until Window A's countdown finishes.</li>
+        <li>Release the mouse in Window B, then try dragging <strong>[Normal Test Link]</strong> in Window A again — <strong>all drag-out in Window A is now permanently dead</strong> (even if you navigate this tab to another URL).</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    const openPeerBtn = document.getElementById('openPeerBtn');
+    const delaySelect = document.getElementById('delaySelect');
+    const delayedFrame = document.getElementById('delayedFrame');
+    const timerBar = document.getElementById('timerBar');
+    const statusBox = document.getElementById('statusBox');
+    const probeLink = document.getElementById('probeLink');
+    const probeStats = document.getElementById('probeStats');
+
+    let probeStarts = 0;
+    let probeEnds = 0;
+    let countdownTimer = null;
+    let endCheckTimer = null;
+
+    openPeerBtn.addEventListener('click', () => {
+      window.open('../macos-drag-wedge-peer/', '_blank', 'noopener,popup,width=520,height=620');
+    });
+
+    delaySelect.addEventListener('change', () => {
+      const delayMs = Number(delaySelect.value) || 3000;
+      delayedFrame.src = `./delayed-box.html?delay=${delayMs}`;
+    });
+
+    function updateProbeStats() {
+      probeStats.textContent = `DOM dragstart: ${probeStarts} · dragend: ${probeEnds}`;
+    }
+
+    probeLink.addEventListener('dragstart', () => {
+      probeStarts++;
+      updateProbeStats();
+    });
+
+    probeLink.addEventListener('dragend', () => {
+      probeEnds++;
+      updateProbeStats();
+    });
+
+    window.addEventListener('message', (e) => {
+      if (!e.data || typeof e.data.type !== 'string') return;
+
+      if (e.data.type === 'delayed-drag-armed') {
+        clearInterval(countdownTimer);
+        clearTimeout(endCheckTimer);
+        const total = e.data.delayMs || 3000;
+        const startedAt = performance.now();
+        statusBox.className = 'status armed';
+
+        countdownTimer = setInterval(() => {
+          const elapsed = performance.now() - startedAt;
+          const remain = Math.max(0, total - elapsed);
+          const pct = Math.min(100, (elapsed / total) * 100);
+          timerBar.style.width = `${pct}%`;
+          if (remain > 0) {
+            statusBox.textContent = `Countdown ${(remain / 1000).toFixed(1)}s — switch to Window B NOW and hold a drag in mid-air!`;
+          } else {
+            clearInterval(countdownTimer);
+          }
+        }, 50);
+      } else if (e.data.type === 'delayed-drag-ipc-sent') {
+        clearInterval(countdownTimer);
+        timerBar.style.width = '100%';
+        statusBox.className = 'status wedged';
+        statusBox.textContent = 'Delayed StartDragging IPC sent! Release Window B, then test [Normal Test Link] above — if Window B was dragging, this tab is now wedged (no dragend received).';
+      } else if (e.data.type === 'delayed-drag-end') {
+        clearTimeout(endCheckTimer);
+        statusBox.className = 'status ok';
+        statusBox.textContent = 'SystemDragEnded (dragend) received — drag state was properly cleaned up (either fixed build, or Window B was not holding an active drag when the timer expired).';
+      }
+    });
+  </script>
+</body>
+</html>

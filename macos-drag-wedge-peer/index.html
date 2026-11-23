@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>macOS Drag State Wedge Repro — Window B (Blocker)</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --surface: #ffffff;
+      --surface-subtle: #f1f3f6;
+      --border: #dfe3ea;
+      --text: #18202c;
+      --muted: #5b6678;
+      --accent: #0f62fe;
+      --active: #1b7f4b;
+      --active-bg: #ebfbee;
+      --active-border: #69db7c;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f131a;
+        --surface: #171c26;
+        --surface-subtle: #1f2633;
+        --border: #2c3547;
+        --text: #e8edf5;
+        --muted: #9aa6ba;
+        --accent: #5c9aff;
+        --active: #69db7c;
+        --active-bg: #15291e;
+        --active-border: #2f9e44;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      padding: 24px 18px 48px;
+    }
+
+    .container {
+      max-width: 540px;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    h1 {
+      font-size: 20px;
+      margin: 0 0 8px;
+    }
+
+    p.lead {
+      margin: 0 0 18px;
+      font-size: 13.5px;
+      color: var(--muted);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+    }
+
+    .drag-pad {
+      display: block;
+      text-decoration: none;
+      padding: 36px 20px;
+      border-radius: 12px;
+      border: 2px solid var(--accent);
+      background: var(--surface-subtle);
+      color: var(--text);
+      text-align: center;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .drag-pad:active { cursor: grabbing; }
+
+    .drag-pad strong {
+      display: block;
+      font-size: 17px;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    .drag-pad span {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .status {
+      margin-top: 14px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      background: var(--surface-subtle);
+    }
+
+    .status.dragging {
+      background: var(--active-bg);
+      border-color: var(--active-border);
+      color: var(--active);
+      font-weight: 600;
+    }
+
+    .footer {
+      font-size: 12.5px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <span class="tag">Window B · Concurrent Drag Blocker</span>
+      <span class="tag" id="heartbeatTag">Main thread alive · 00</span>
+    </div>
+
+    <h1>Hold a Drag Here While Window A Counts Down</h1>
+    <p class="lead">
+      Holding an active AppKit drag session here sets <code>gDragSessionInProgressResponsibleView</code>
+      and enables nested task pumping (<code>ScopedAllowApplicationTasksInNativeNestedLoop</code>), so
+      Window A's delayed <code>StartDragging</code> IPC arrives mid-drag and gets rejected.
+    </p>
+
+    <div class="card">
+      <a class="drag-pad" id="blockerPad" href="https://example.com" draggable="true">
+        <strong>[Blocker Drag Card] Press, Drag Slightly &amp; HOLD in Mid-Air</strong>
+        <span>Keep holding the mouse button until Window A's 3.0s countdown reaches 0.0s, then release.</span>
+      </a>
+
+      <div class="status" id="dragStatus">
+        Status: Idle — waiting for you to start &amp; hold a drag.
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>Companion page: <a href="../macos-drag-wedge/" style="color:var(--accent);">Window A (Victim Page)</a></span>
+      <span id="sessionCount">Completed drags: 0</span>
+    </div>
+  </div>
+
+  <script>
+    const blockerPad = document.getElementById('blockerPad');
+    const dragStatus = document.getElementById('dragStatus');
+    const sessionCount = document.getElementById('sessionCount');
+    const heartbeatTag = document.getElementById('heartbeatTag');
+
+    let completed = 0;
+    let tick = 0;
+
+    setInterval(() => {
+      tick = (tick + 1) % 100;
+      heartbeatTag.textContent = `Main thread alive · ${String(tick).padStart(2, '0')}`;
+    }, 150);
+
+    blockerPad.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/uri-list', 'https://example.com');
+      e.dataTransfer.setData('text/plain', 'https://example.com');
+      dragStatus.className = 'status dragging';
+      dragStatus.textContent = 'Status: DRAG ACTIVE — keep holding mouse button until Window A countdown hits 0.0s!';
+    });
+
+    blockerPad.addEventListener('dragend', () => {
+      completed++;
+      dragStatus.className = 'status';
+      dragStatus.textContent = 'Status: Released. Now return to Window A and try dragging [Normal Test Link].';
+      sessionCount.textContent = `Completed drags: ${completed}`;
+    });
+  </script>
+</body>
+</html>

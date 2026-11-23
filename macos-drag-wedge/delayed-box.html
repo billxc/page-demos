@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delayed Drag Source Frame</title>
+  <style>
+    :root {
+      --bg: #eef4ff;
+      --border: #5c9aff;
+      --text: #14264c;
+      --sub: #3b5280;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #16243e;
+        --border: #4d88ff;
+        --text: #e6eefc;
+        --sub: #9cb5e4;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+      background: transparent;
+    }
+    #box {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 6px;
+      padding: 18px 20px;
+      border-radius: 10px;
+      border: 2px dashed var(--border);
+      background: var(--bg);
+      color: var(--text);
+      cursor: grab;
+      user-select: none;
+    }
+    #box:active { cursor: grabbing; }
+    .title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .hint {
+      font-size: 13px;
+      color: var(--sub);
+    }
+  </style>
+</head>
+<body>
+  <div id="box" draggable="true">
+    <div class="title" id="label">[3.0s Delayed Drag Box] Pull slightly &amp; release mouse immediately</div>
+    <div class="hint">No drag preview lifts yet during the delay — immediately switch to Window B and hold a drag there.</div>
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    let delayMs = Math.max(500, Math.min(10000, Number(params.get('delay')) || 3000));
+    const label = document.getElementById('label');
+    const box = document.getElementById('box');
+
+    function updateLabel() {
+      label.textContent = `[${(delayMs / 1000).toFixed(1)}s Delayed Drag Box] Pull slightly & release mouse immediately`;
+    }
+    updateLabel();
+
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'set-delay' && typeof e.data.delayMs === 'number') {
+        delayMs = Math.max(500, Math.min(10000, e.data.delayMs));
+        updateLabel();
+      }
+    });
+
+    box.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', 'delayed-drag-payload');
+      e.dataTransfer.effectAllowed = 'copyMove';
+      parent.postMessage({ type: 'delayed-drag-armed', delayMs }, '*');
+      const end = Date.now() + delayMs;
+      while (Date.now() < end) {
+        // Busy-wait inside isolated sandboxed renderer before StartDragging IPC leaves Blink.
+      }
+      parent.postMessage({ type: 'delayed-drag-ipc-sent' }, '*');
+    });
+
+    box.addEventListener('dragend', () => {
+      parent.postMessage({ type: 'delayed-drag-end' }, '*');
+    });
+  </script>
+</body>
+</html>
