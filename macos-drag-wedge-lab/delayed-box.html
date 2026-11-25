@@ -32,7 +32,9 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      gap: 5px;
+      align-items: center;
+      text-align: center;
+      gap: 4px;
       padding: 14px 18px;
       border-radius: 10px;
       border: 2px dashed var(--border);
@@ -43,19 +45,19 @@
     }
     #box:active { cursor: grabbing; }
     .title {
-      font-size: 15px;
-      font-weight: 600;
+      font-size: 15.5px;
+      font-weight: 650;
     }
     .hint {
-      font-size: 12.5px;
+      font-size: 13px;
       color: var(--sub);
     }
   </style>
 </head>
 <body>
   <div id="box" draggable="true">
-    <div class="title" id="label">[3.0s Delayed Drag Box] Pull slightly &amp; release mouse immediately</div>
-    <div class="hint">Isolated sandboxed subframe — outer page stays responsive during the countdown so you can trigger M1–M5 right away.</div>
+    <div class="title" id="label">[3.0s Delayed Drag Box] — Pull slightly downward &amp; release mouse immediately</div>
+    <div class="hint">No drag preview appears yet — as soon as you release, move straight down to Step 3!</div>
   </div>
   <script>
     const params = new URLSearchParams(location.search);
@@ -63,10 +65,7 @@
     const label = document.getElementById('label');
     const box = document.getElementById('box');
 
-    function updateLabel() {
-      label.textContent = `[${(delayMs / 1000).toFixed(1)}s Delayed Drag Box] Pull slightly & release mouse immediately`;
-    }
-    updateLabel();
+    label.textContent = `[${(delayMs / 1000).toFixed(1)}s Delayed Drag Box] — Pull slightly downward & release mouse immediately`;
 
     box.addEventListener('dragstart', (e) => {
       e.dataTransfer.setData('text/plain', 'delayed-drag-payload');
@@ -74,7 +73,7 @@
       parent.postMessage({ type: 'delayed-drag-armed', delayMs }, '*');
       const end = Date.now() + delayMs;
       while (Date.now() < end) {
-        // Busy-wait inside isolated sandboxed renderer before StartDragging IPC is sent.
+        // Busy-wait inside isolated sandboxed renderer before StartDragging IPC leaves Blink.
       }
       parent.postMessage({ type: 'delayed-drag-ipc-sent' }, '*');
     });

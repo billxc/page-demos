@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>macOS Drag State Wedge — Multi-Path Repro Lab</title>
+  <title>macOS Drag State Wedge Repro</title>
   <style>
     :root {
       --bg: #f6f7f9;
@@ -14,6 +14,7 @@
       --muted: #5b6678;
       --accent: #0f62fe;
       --accent-hover: #0043ce;
+      --accent-soft: #eef4ff;
       --warn: #b45309;
       --warn-bg: #fffbeb;
       --warn-border: #fde68a;
@@ -35,6 +36,7 @@
         --muted: #9aa6ba;
         --accent: #5c9aff;
         --accent-hover: #7bb0ff;
+        --accent-soft: #172540;
         --warn: #fbbf24;
         --warn-bg: #2b2312;
         --warn-border: #664d14;
@@ -55,36 +57,16 @@
       background: var(--bg);
       color: var(--text);
       line-height: 1.55;
-      padding: 24px 18px 56px;
+      padding: 28px 18px 60px;
     }
 
     .container {
-      max-width: 880px;
+      max-width: 760px;
       margin: 0 auto;
     }
 
     .container.narrow {
-      max-width: 540px;
-    }
-
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 12px;
-    }
-
-    .tag {
-      display: inline-block;
-      font-size: 12px;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: var(--surface-subtle);
-      border: 1px solid var(--border);
-      color: var(--muted);
+      max-width: 520px;
     }
 
     h1 {
@@ -95,122 +77,100 @@
     p.lead {
       margin: 0 0 18px;
       color: var(--muted);
-      font-size: 13.5px;
+      font-size: 14px;
     }
 
+    /* Segmented Method Switcher */
+    .switcher {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      padding: 6px;
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 18px;
+    }
+
+    @media (max-width: 640px) {
+      .switcher { grid-template-columns: 1fr; }
+    }
+
+    .tab-btn {
+      appearance: none;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: left;
+      transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+    }
+
+    .tab-btn.active {
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+
+    .tab-btn strong {
+      display: block;
+      font-size: 13.5px;
+      margin-bottom: 2px;
+    }
+
+    .tab-btn.active strong {
+      color: var(--accent);
+    }
+
+    .tab-btn span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* Linear Step Cards */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 16px 18px;
+      padding: 18px 20px;
       margin-bottom: 14px;
     }
 
-    .card h2 {
-      font-size: 15px;
-      margin: 0 0 10px;
+    .card-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .row {
-      display: flex;
-      align-items: center;
       gap: 10px;
       flex-wrap: wrap;
+      margin-bottom: 10px;
     }
 
-    button {
-      appearance: none;
-      border: 1px solid var(--border);
-      background: var(--surface-subtle);
-      color: var(--text);
-      font-weight: 600;
-      font-size: 13px;
-      padding: 8px 14px;
-      border-radius: 8px;
-      cursor: pointer;
+    .step-title {
+      font-size: 15px;
+      font-weight: 650;
+      margin: 0;
     }
 
-    button.primary {
-      border: none;
-      background: var(--accent);
-      color: #fff;
+    .sub-note {
+      font-size: 12.5px;
+      color: var(--muted);
     }
 
-    button.primary:hover { background: var(--accent-hover); }
-
-    select {
-      font-size: 13.5px;
-      padding: 7px 10px;
-      border-radius: 7px;
-      border: 1px solid var(--border);
-      background: var(--surface-subtle);
-      color: var(--text);
-    }
-
-    iframe#delayedFrame {
-      width: 100%;
-      height: 84px;
-      border: none;
-      display: block;
-    }
-
-    .timer-bar-wrap {
-      margin-top: 10px;
-      height: 8px;
-      border-radius: 999px;
-      background: var(--surface-subtle);
-      overflow: hidden;
-    }
-
-    .timer-bar {
-      height: 100%;
-      width: 0%;
-      background: var(--accent);
-      transition: width 50ms linear;
-    }
-
-    .status {
-      margin-top: 10px;
-      padding: 9px 12px;
-      border-radius: 8px;
-      font-size: 13px;
-      border: 1px solid var(--border);
-      background: var(--surface-subtle);
-    }
-
-    .status.armed {
-      background: var(--warn-bg);
-      border-color: var(--warn-border);
-      color: var(--warn);
-      font-weight: 600;
-    }
-
-    .status.wedged {
-      background: var(--danger-bg);
-      border-color: var(--danger-border);
-      color: var(--danger);
-      font-weight: 600;
-    }
-
-    .status.ok {
-      background: var(--ok-bg);
-      border-color: var(--ok-border);
-      color: var(--ok);
-      font-weight: 600;
-    }
-
-    .probe-bar {
+    .probe-box {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
       flex-wrap: wrap;
-      padding: 12px 14px;
+      padding: 13px 16px;
       border-radius: 10px;
       background: var(--surface-subtle);
       border: 1px solid var(--border);
@@ -222,68 +182,132 @@
       color: var(--accent);
     }
 
-    .methods-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-      gap: 12px;
-    }
-
-    .method-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 15px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .method-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .method-id {
-      display: inline-block;
-      font-size: 12px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 6px;
-      background: var(--accent);
-      color: #fff;
-    }
-
-    .method-scope {
-      font-size: 11.5px;
-      color: var(--muted);
-      font-weight: 600;
-    }
-
-    .method-title {
-      font-size: 14.5px;
-      font-weight: 650;
-      margin: 0;
-    }
-
-    .method-desc {
-      font-size: 13px;
-      color: var(--muted);
-      margin: 0;
-    }
-
-    .target-zone {
-      padding: 14px;
-      border-radius: 9px;
-      border: 1.5px dashed var(--border);
-      background: var(--surface-subtle);
-      text-align: center;
+    /* Countdown ABOVE Delayed Box so downward menus never obscure it */
+    .status {
+      padding: 10px 13px;
+      border-radius: 8px;
       font-size: 13.5px;
+      border: 1px solid var(--border);
+      background: var(--surface-subtle);
+      margin-bottom: 8px;
+    }
+
+    .status.armed {
+      background: var(--warn-bg);
+      border-color: var(--warn-border);
+      color: var(--warn);
+      font-weight: 650;
+    }
+
+    .status.wedged {
+      background: var(--danger-bg);
+      border-color: var(--danger-border);
+      color: var(--danger);
+      font-weight: 650;
+    }
+
+    .status.ok {
+      background: var(--ok-bg);
+      border-color: var(--ok-border);
+      color: var(--ok);
       font-weight: 600;
+    }
+
+    .timer-bar-wrap {
+      height: 8px;
+      border-radius: 999px;
+      background: var(--surface-subtle);
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .timer-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 50ms linear;
+    }
+
+    iframe#delayedFrame {
+      width: 100%;
+      height: 84px;
+      border: none;
+      display: block;
+    }
+
+    /* Step 3 Blocker Targets */
+    .context-zone {
+      padding: 24px 18px;
+      border-radius: 10px;
+      border: 2px dashed var(--accent);
+      background: var(--accent-soft);
+      text-align: center;
+      font-size: 15px;
+      font-weight: 650;
+      color: var(--text);
+      cursor: context-menu;
       user-select: none;
     }
 
+    .context-zone small {
+      display: block;
+      margin-top: 4px;
+      font-size: 12.5px;
+      font-weight: 450;
+      color: var(--muted);
+    }
+
+    .big-select {
+      width: 100%;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 13px 14px;
+      border-radius: 10px;
+      border: 2px solid var(--accent);
+      background: var(--accent-soft);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button.btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: var(--surface-subtle);
+      color: var(--text);
+      font-weight: 600;
+      font-size: 13px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button.btn.primary {
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 14px;
+      padding: 9px 16px;
+    }
+
+    button.btn.primary:hover { background: var(--accent-hover); }
+
+    select.small-select {
+      font-size: 12.5px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface-subtle);
+      color: var(--text);
+    }
+
+    /* Blocker Window Mode */
     .drag-pad {
       display: block;
       text-decoration: none;
@@ -311,6 +335,29 @@
       color: var(--muted);
     }
 
+    details.tech-details {
+      margin-top: 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    details.tech-details summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    details.tech-details ul {
+      margin: 10px 0 4px;
+      padding-left: 20px;
+    }
+
+    details.tech-details li { margin-bottom: 6px; }
+
     code {
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       font-size: 12px;
@@ -323,171 +370,158 @@
   </style>
 </head>
 <body>
-  <!-- ==================== MODE: WINDOW B BLOCKER (?mode=blocker) ==================== -->
+  <!-- ==================== WINDOW B BLOCKER VIEW (?mode=blocker) ==================== -->
   <div class="container narrow hidden" id="blockerView">
-    <div class="topbar">
-      <span class="tag">Window B · Concurrent Drag Blocker</span>
-      <span class="tag" id="heartbeatTag">Alive · 00</span>
-    </div>
-
-    <h1>Hold a Drag Here While Window A Counts Down (M3)</h1>
+    <h1>Window B — Hold a Drag Here</h1>
     <p class="lead">
-      Holding an active drag here sets <code>gDragSessionInProgressResponsibleView</code> and pumps
-      nested tasks (<code>ScopedAllowApplicationTasksInNativeNestedLoop</code>), so Window A's delayed
-      <code>StartDragging</code> IPC arrives mid-drag and gets rejected.
+      Keep this window beside Window A. After you pull &amp; release the Delayed Drag Box in Window A,
+      press and hold the card below in mid-air until Window A's countdown hits <code>0.0s</code>.
     </p>
 
     <div class="card">
       <a class="drag-pad" id="blockerPad" href="https://example.com" draggable="true">
-        <strong>[Blocker Drag Card] Press, Drag Slightly &amp; HOLD in Mid-Air</strong>
-        <span>Keep holding the mouse button until Window A's countdown hits 0.0s, then release.</span>
+        <strong>[Blocker Drag Card] — Drag Slightly &amp; HOLD in Mid-Air</strong>
+        <span>Release after Window A reaches 0.0s, then test the link in Window A.</span>
       </a>
-      <div class="status" id="blockerStatus">
-        Status: Idle — waiting for you to start &amp; hold a drag.
+      <div class="status" id="blockerStatus" style="margin-top:12px;margin-bottom:0;">
+        Idle — waiting for you to hold a drag.
       </div>
     </div>
   </div>
 
-  <!-- ==================== MODE: MAIN MULTI-PATH LAB ==================== -->
-  <div class="container" id="labView">
-    <div class="topbar">
-      <span class="tag">macOS Drag State Wedge · Multi-Path Repro Lab</span>
+  <!-- ==================== MAIN LINEAR FLOW VIEW ==================== -->
+  <div class="container" id="mainView">
+    <h1>macOS Chrome — Tab Drag Permanently Stops Working After Rejected Drag</h1>
+    <p class="lead">
+      On macOS, if a delayed <code>dragstart</code> arrives while a native menu or another drag session
+      is open, the drag is rejected and <strong>all future drag-out in this tab stops working permanently</strong>
+      (even across page navigations). Choose any reproduction method below:
+    </p>
+
+    <!-- 3-Way Method Selector -->
+    <div class="switcher" role="tablist" aria-label="Reproduction method">
+      <button class="tab-btn active" type="button" data-method="m1" role="tab" aria-selected="true">
+        <strong>Method 1 · Right-Click Menu</strong>
+        <span>Single window · Easiest</span>
+      </button>
+      <button class="tab-btn" type="button" data-method="m2" role="tab" aria-selected="false">
+        <strong>Method 2 · &lt;select&gt; Menu</strong>
+        <span>Single window · Dropdown</span>
+      </button>
+      <button class="tab-btn" type="button" data-method="m3" role="tab" aria-selected="false">
+        <strong>Method 3 · Concurrent Drag</strong>
+        <span>Two windows side-by-side</span>
+      </button>
+    </div>
+
+    <!-- Prep Card (ONLY for Method 3) -->
+    <div class="card hidden" id="m3PrepCard">
+      <div class="card-header" style="margin-bottom:8px;">
+        <h2 class="step-title">Setup — Open Companion Window B Beside This Window</h2>
+      </div>
       <div class="row">
-        <label style="font-size:12.5px;color:var(--muted);">
-          Delay:
-          <select id="delaySelect">
-            <option value="3000" selected>3.0s</option>
-            <option value="4500">4.5s</option>
-          </select>
-        </label>
-        <button id="freshTabBtn" type="button" title="Once wedged, reload cannot recover this tab — open a fresh tab to test the next method">
-          Open Fresh Unwedged Tab ↗
-        </button>
+        <button class="btn primary" id="openBlockerBtn" type="button">Open Window B (Blocker Popup)</button>
+        <span class="sub-note">Place Window A and Window B side-by-side before starting Step 1.</span>
       </div>
     </div>
 
-    <h1>macOS Rejected Drag Initiation — Candidate Repro Paths (M1–M5)</h1>
-    <p class="lead">
-      Test each method below: pull the <strong>Delayed Drag Box</strong> slightly &amp; release immediately,
-      perform one of <strong>M1–M5</strong> before the countdown hits <code>0.0s</code>, then check if
-      <strong>[Normal Test Link]</strong> still lifts a drag preview. (Note: once wedged, reload will NOT
-      recover the tab — click <strong>Open Fresh Unwedged Tab</strong> to test the next method.)
-    </p>
-
-    <!-- Shared Step A & Probe -->
+    <!-- Step 1: Baseline -->
     <div class="card">
-      <h2>
-        <span>1. Shared Trigger (Start 3s Delayed Drag) &amp; Verification Probe</span>
-        <span style="font-size:12px;font-weight:500;color:var(--muted);" id="probeStats">Probe DOM dragstart: 0 · dragend: 0</span>
-      </h2>
-
-      <iframe id="delayedFrame" sandbox="allow-scripts" src="./delayed-box.html?delay=3000" title="Delayed drag source"></iframe>
-
-      <div class="timer-bar-wrap">
-        <div class="timer-bar" id="timerBar"></div>
+      <div class="card-header">
+        <h2 class="step-title">Step 1 — Check Baseline (Drag This Normal Link Once)</h2>
+        <span class="sub-note" id="probeStats">Drag count: 0</span>
       </div>
-      <div class="status" id="statusBox">
-        Idle. First test [Normal Test Link] below, then pull the dashed box slightly &amp; release immediately.
-      </div>
-
-      <div class="probe-bar" style="margin-top:12px;">
-        <a class="probe-link" id="probeLink" href="https://example.com">
-          [Normal Test Link] Drag me BEFORE &amp; AFTER testing a method to check if this tab is wedged
+      <div class="probe-box">
+        <a class="probe-link test-link" href="https://example.com">
+          [Normal Test Link] — Drag me slightly to confirm a link preview lifts normally
         </a>
       </div>
     </div>
 
-    <!-- Candidate Repro Methods M1 - M5 -->
-    <div class="methods-grid">
-      <!-- M1: Single-window Right-Click Context Menu -->
-      <div class="method-box">
-        <div class="method-head">
-          <span class="method-id">M1</span>
-          <span class="method-scope">Single Window · Context Menu</span>
-        </div>
-        <p class="method-title">Right-Click Page Context Menu</p>
-        <p class="method-desc">
-          <code>RenderViewContextMenuViews::Show</code> enables <code>ScopedAllowApplicationTasksInNativeNestedLoop</code>
-          before opening native <code>NSMenu</code> (<code>NSEventTrackingRunLoopMode</code>).
-          Pull box &amp; release → <strong>right-click the zone below within 3s and keep menu open past 0.0s</strong>.
-        </p>
-        <div class="target-zone" id="contextZone">
-          Right-Click (or Two-Finger Click) Here &amp; Hold Menu Open Until 0.0s
-        </div>
-      </div>
-
-      <!-- M2: Single-window HTML <select> Popup Menu -->
-      <div class="method-box">
-        <div class="method-head">
-          <span class="method-id">M2</span>
-          <span class="method-scope">Single Window · &lt;select&gt; NSMenu</span>
-        </div>
-        <p class="method-title">Native HTML &lt;select&gt; Popup Menu</p>
-        <p class="method-desc">
-          <code>RenderWidgetHostNSViewBridge::DisplayPopupMenu</code> enables nested task pumping while
-          <code>NSPopUpButtonCell</code> runs in <code>NSEventTrackingRunLoopMode</code> (Chrome Mac / native select).
-          Pull box &amp; release → <strong>click dropdown below within 3s and keep it open past 0.0s</strong>.
-        </p>
-        <div>
-          <select style="width:100%;padding:10px 12px;font-weight:600;" aria-label="Native select menu blocker">
-            <option>Click me during countdown &amp; keep popup open past 0.0s...</option>
-            <option>Option A — Leave menu open until timer finishes</option>
-            <option>Option B — Dismiss after 0.0s, then test Normal Link</option>
+    <!-- Step 2: Delayed Drag Trigger -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="step-title">Step 2 — Pull Delayed Drag Box &amp; Release Mouse Immediately</h2>
+        <label class="sub-note">
+          Delay:
+          <select class="small-select" id="delaySelect">
+            <option value="3000" selected>3.0s</option>
+            <option value="4500">4.5s</option>
           </select>
+        </label>
+      </div>
+
+      <div class="status" id="statusBox">
+        Ready — pull the dashed box below slightly downward and release the mouse button right away.
+      </div>
+      <div class="timer-bar-wrap">
+        <div class="timer-bar" id="timerBar"></div>
+      </div>
+
+      <iframe id="delayedFrame" sandbox="allow-scripts" src="./delayed-box.html?delay=3000" title="Delayed drag source"></iframe>
+    </div>
+
+    <!-- Step 3: Blocker Action (Morphs smoothly for M1 / M2 / M3) -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="step-title" id="step3Title">Step 3 — Before 0.0s, Right-Click Below &amp; Keep Menu Open</h2>
+      </div>
+
+      <!-- M1 Target -->
+      <div id="m1Panel">
+        <div class="context-zone">
+          Right-Click (or Two-Finger Click) Inside This Box Now
+          <small>Keep the native macOS context menu open until the countdown bar above hits 0.0s, then click outside to close it.</small>
         </div>
       </div>
 
-      <!-- M3: Two-Window Concurrent Web Drag -->
-      <div class="method-box">
-        <div class="method-head">
-          <span class="method-id">M3</span>
-          <span class="method-scope">Two Windows · Concurrent Web Drag (Verified)</span>
-        </div>
-        <p class="method-title">Hold Web Drag in Companion Window B</p>
-        <p class="method-desc">
-          Active drag in Window B sets <code>gDragSessionInProgressResponsibleView</code> and pumps nested Mojo tasks.
-          Open Window B first → pull box in Window A &amp; release → <strong>drag &amp; hold card in Window B past 0.0s</strong>.
-        </p>
-        <div class="row">
-          <button class="primary" id="openBlockerBtn" type="button">Open Window B (Blocker Popup)</button>
-          <a href="./?mode=blocker" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--accent);">./?mode=blocker ↗</a>
-        </div>
+      <!-- M2 Target -->
+      <div id="m2Panel" class="hidden">
+        <select class="big-select" aria-label="Native select popup menu">
+          <option>Click Here Now to Open Native &lt;select&gt; Menu &amp; Keep It Open Until 0.0s...</option>
+          <option>Option A — Wait until the countdown above reaches 0.0s</option>
+          <option>Option B — Then close this menu and proceed to Step 4</option>
+        </select>
       </div>
 
-      <!-- M4: Single-Window Views Bookmark Bar Drag -->
-      <div class="method-box">
-        <div class="method-head">
-          <span class="method-id">M4</span>
-          <span class="method-scope">Single Window · Browser Views Drag</span>
-        </div>
-        <p class="method-title">Drag &amp; Hold a Bookmark on Bookmarks Bar</p>
-        <p class="method-desc">
-          <code>DragDropClientMac::StartDragAndDrop</code> sets <code>SetDragSessionInProgress(bridged_view)</code>
-          and spins a <code>kNestableTasksAllowed</code> RunLoop. Show Bookmarks Bar (<code>Cmd+Shift+B</code>) →
-          pull box &amp; release → <strong>drag &amp; hold any bookmark on the bar in mid-air past 0.0s</strong>.
-        </p>
-        <div class="target-zone">
-          Requires visible Bookmarks Bar (Cmd+Shift+B) with at least 1 bookmark
-        </div>
-      </div>
-
-      <!-- M5: Native Host NSMenu / macOS Menu Bar -->
-      <div class="method-box">
-        <div class="method-head">
-          <span class="method-id">M5</span>
-          <span class="method-scope">WebView2Mac Host / macOS Menu Bar</span>
-        </div>
-        <p class="method-title">Open macOS Menu Bar (File) or Host App NSMenu</p>
-        <p class="method-desc">
-          In <strong>WebView2Mac</strong>, any host native <code>NSMenu</code> (menu bar, <code>NSPopUpButton</code>,
-          status item) enters <code>NSEventTrackingRunLoopMode</code> without suppressing Mojo IPC (standalone browsers
-          may defer tasks on top menu bar). Pull box &amp; release → <strong>open top File menu / host NSMenu past 0.0s</strong>.
-        </p>
-        <div class="target-zone">
-          Click macOS top menu bar "File" (or WebView2Mac host native menu) &amp; keep open past 0.0s
+      <!-- M3 Target -->
+      <div id="m3Panel" class="hidden">
+        <div class="probe-box">
+          <span>
+            Move to <strong>Window B</strong> now, drag its <strong>[Blocker Drag Card]</strong> into mid-air,
+            and <strong>keep holding the mouse button</strong> until the countdown above reaches <code>0.0s</code>.
+          </span>
+          <button class="btn" id="reopenBlockerBtn" type="button">Re-open Window B</button>
         </div>
       </div>
     </div>
+
+    <!-- Step 4: Post-Repro Check -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="step-title">Step 4 — Drag Normal Link Again to Confirm Tab Is Wedged</h2>
+        <button class="btn" id="freshTabBtn" type="button">Open Fresh Tab to Retry ↗</button>
+      </div>
+      <div class="probe-box">
+        <a class="probe-link test-link" href="https://example.com">
+          [Normal Test Link] — Try dragging me now (nothing happens; this tab's drag-out is permanently dead)
+        </a>
+      </div>
+      <div class="sub-note" style="margin-top:8px;">
+        Once wedged, reloading or navigating to another website will not recover this tab — click
+        <strong>Open Fresh Tab to Retry</strong> to test another method.
+      </div>
+    </div>
+
+    <!-- Optional Technical Root Cause (Collapsed by default) -->
+    <details class="tech-details">
+      <summary>Technical Details &amp; Root Cause (Chromium macOS)</summary>
+      <ul>
+        <li>Regressed by <code>efb4e25d7536583cbcebc60f99f08d8ada6304ac</code> (<code>crrev.com/c/8452662</code>; <code>ui/base/cocoa/drag_coordinator.{h,mm}</code>).</li>
+        <li><code>WebContentsViewMac::StartDragging</code> sets <code>[drag_dest_ initiateDragWithRenderWidgetHost:...]</code> (<code>did_initiate_ = true</code>) before calling <code>StartDrag(...)</code>, while <code>-[WebContentsViewCocoa startDragWithDropData:...]</code> returns early on <code>!ui::IsDragSessionInitiationAllowed()</code> (or a <code>nil</code> <code>NSDraggingSession*</code>) without calling <code>_host-&gt;EndDrag(...)</code>.</li>
+        <li><strong>Method 1</strong> enters <code>NSEventTrackingRunLoopMode</code> with nested task pumping via <code>RenderViewContextMenuViews::Show</code>; <strong>Method 2</strong> does the same via <code>RenderWidgetHostNSViewBridge::DisplayPopupMenu</code>; <strong>Method 3</strong> sets <code>gDragSessionInProgressResponsibleView</code> via an active drag session in Window B.</li>
+      </ul>
+    </details>
   </div>
 
   <script>
@@ -495,70 +529,100 @@
     const isBlocker = params.get('mode') === 'blocker';
 
     if (isBlocker) {
-      document.title = 'Window B (Blocker) — macOS Drag Wedge Lab';
-      document.getElementById('labView').classList.add('hidden');
+      document.title = 'Window B (Blocker) — macOS Drag Wedge Repro';
+      document.getElementById('mainView').classList.add('hidden');
       document.getElementById('blockerView').classList.remove('hidden');
 
       const blockerPad = document.getElementById('blockerPad');
       const blockerStatus = document.getElementById('blockerStatus');
-      const heartbeatTag = document.getElementById('heartbeatTag');
-      let tick = 0;
-
-      setInterval(() => {
-        tick = (tick + 1) % 100;
-        heartbeatTag.textContent = `Alive · ${String(tick).padStart(2, '0')}`;
-      }, 150);
 
       blockerPad.addEventListener('dragstart', (e) => {
         e.dataTransfer.setData('text/uri-list', 'https://example.com');
         e.dataTransfer.setData('text/plain', 'https://example.com');
         blockerStatus.className = 'status ok';
-        blockerStatus.textContent = 'Status: DRAG ACTIVE — keep holding mouse button until Window A countdown hits 0.0s!';
+        blockerStatus.textContent = 'DRAG ACTIVE — keep holding until Window A reaches 0.0s!';
       });
 
       blockerPad.addEventListener('dragend', () => {
         blockerStatus.className = 'status';
-        blockerStatus.textContent = 'Status: Released. Return to Window A and test [Normal Test Link].';
+        blockerStatus.textContent = 'Released — return to Window A and try Step 4.';
       });
     } else {
+      const baseTitle = document.title;
+      const tabBtns = Array.from(document.querySelectorAll('.tab-btn'));
+      const m3PrepCard = document.getElementById('m3PrepCard');
+      const m1Panel = document.getElementById('m1Panel');
+      const m2Panel = document.getElementById('m2Panel');
+      const m3Panel = document.getElementById('m3Panel');
+      const step3Title = document.getElementById('step3Title');
       const delaySelect = document.getElementById('delaySelect');
-      const freshTabBtn = document.getElementById('freshTabBtn');
-      const openBlockerBtn = document.getElementById('openBlockerBtn');
       const delayedFrame = document.getElementById('delayedFrame');
-      const timerBar = document.getElementById('timerBar');
       const statusBox = document.getElementById('statusBox');
-      const probeLink = document.getElementById('probeLink');
+      const timerBar = document.getElementById('timerBar');
       const probeStats = document.getElementById('probeStats');
+      const freshTabBtn = document.getElementById('freshTabBtn');
 
-      let probeStarts = 0;
-      let probeEnds = 0;
+      let currentMethod = ['m1', 'm2', 'm3'].includes(params.get('method')) ? params.get('method') : 'm1';
+      let dragCount = 0;
       let countdownTimer = null;
+
+      const step3Headings = {
+        m1: 'Step 3 — Before 0.0s, Right-Click Below & Keep Menu Open',
+        m2: 'Step 3 — Before 0.0s, Open <select> Dropdown Below & Keep It Open',
+        m3: 'Step 3 — Before 0.0s, Drag & Hold the Card in Window B',
+      };
+
+      const armedPrompts = {
+        m1: 'right-click the blue box in Step 3 NOW and keep the menu open!',
+        m2: 'click the <select> dropdown in Step 3 NOW and keep it open!',
+        m3: 'drag & hold the card in Window B NOW until 0.0s!',
+      };
+
+      function selectMethod(m) {
+        currentMethod = m;
+        tabBtns.forEach((btn) => {
+          const active = btn.dataset.method === m;
+          btn.classList.toggle('active', active);
+          btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        m3PrepCard.classList.toggle('hidden', m !== 'm3');
+        m1Panel.classList.toggle('hidden', m !== 'm1');
+        m2Panel.classList.toggle('hidden', m !== 'm2');
+        m3Panel.classList.toggle('hidden', m !== 'm3');
+        step3Title.textContent = step3Headings[m];
+
+        const nextUrl = new URL(location.href);
+        nextUrl.searchParams.set('method', m);
+        history.replaceState(null, '', nextUrl);
+      }
+
+      tabBtns.forEach((btn) => {
+        btn.addEventListener('click', () => selectMethod(btn.dataset.method));
+      });
+      selectMethod(currentMethod);
+
+      function openBlockerPopup() {
+        window.open('./?mode=blocker', '_blank', 'noopener,popup,width=500,height=460');
+      }
+      document.getElementById('openBlockerBtn').addEventListener('click', openBlockerPopup);
+      document.getElementById('reopenBlockerBtn').addEventListener('click', openBlockerPopup);
+
+      freshTabBtn.addEventListener('click', () => {
+        const nextUrl = new URL(location.href);
+        nextUrl.searchParams.set('method', currentMethod);
+        window.open(nextUrl.toString(), '_blank', 'noopener');
+      });
 
       delaySelect.addEventListener('change', () => {
         const delayMs = Number(delaySelect.value) || 3000;
         delayedFrame.src = `./delayed-box.html?delay=${delayMs}`;
       });
 
-      freshTabBtn.addEventListener('click', () => {
-        window.open(location.href, '_blank', 'noopener');
-      });
-
-      openBlockerBtn.addEventListener('click', () => {
-        window.open('./?mode=blocker', '_blank', 'noopener,popup,width=520,height=560');
-      });
-
-      function updateProbeStats() {
-        probeStats.textContent = `Probe DOM dragstart: ${probeStarts} · dragend: ${probeEnds}`;
-      }
-
-      probeLink.addEventListener('dragstart', () => {
-        probeStarts++;
-        updateProbeStats();
-      });
-
-      probeLink.addEventListener('dragend', () => {
-        probeEnds++;
-        updateProbeStats();
+      document.querySelectorAll('.test-link').forEach((link) => {
+        link.addEventListener('dragstart', () => {
+          dragCount++;
+          probeStats.textContent = `Drag count: ${dragCount}`;
+        });
       });
 
       window.addEventListener('message', (e) => {
@@ -576,7 +640,9 @@
             const pct = Math.min(100, (elapsed / total) * 100);
             timerBar.style.width = `${pct}%`;
             if (remain > 0) {
-              statusBox.textContent = `Countdown ${(remain / 1000).toFixed(1)}s — trigger M1 / M2 / M3 / M4 / M5 NOW and hold past 0.0s!`;
+              const sec = (remain / 1000).toFixed(1);
+              document.title = `⏳ ${sec}s — Hold Blocker!`;
+              statusBox.textContent = `⏳ ${sec}s left — ${armedPrompts[currentMethod]}`;
             } else {
               clearInterval(countdownTimer);
             }
@@ -584,11 +650,13 @@
         } else if (e.data.type === 'delayed-drag-ipc-sent') {
           clearInterval(countdownTimer);
           timerBar.style.width = '100%';
+          document.title = `✅ 0.0s — Test Step 4!`;
           statusBox.className = 'status wedged';
-          statusBox.textContent = 'StartDragging IPC sent! Dismiss menu / release drag, then test [Normal Test Link] — if it fails to lift a drag preview (and this box stays red without dragend), REPRO SUCCEEDED!';
+          statusBox.textContent = '0.0s reached (delayed StartDragging IPC sent) — close menu / release Window B, then try dragging the link in Step 4!';
         } else if (e.data.type === 'delayed-drag-end') {
+          document.title = baseTitle;
           statusBox.className = 'status ok';
-          statusBox.textContent = 'SystemDragEnded (dragend) received — drag was NOT wedged on this attempt (try another method or check timing).';
+          statusBox.textContent = 'Drag ended normally (not rejected) — make sure the menu or Window B drag is already open before the timer hits 0.0s.';
         }
       });
     }
